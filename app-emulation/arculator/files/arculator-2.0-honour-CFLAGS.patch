@@ -1,0 +1,16 @@
+--- arculator-v2.0/configure.ac.orig	2019-11-09 14:19:47.000000000 +0000
++++ arculator-v2.0/configure.ac	2021-02-14 17:03:13.767874162 +0000
+@@ -21,8 +21,12 @@
+    CXXFLAGS="-Wall -O0 -g -D_DEBUG -DDEBUG_LOG"
+    AC_MSG_RESULT([yes])
+ else
+-   CFLAGS="-O3"
+-   CXXFLAGS="-O3"
++   if test "${CFLAGS-set}" = "set"; then
++      CFLAGS="-O3"
++   fi
++   if test "${CXXFLAGS-set}" = "set"; then
++      CXXFLAGS="-O3"
++   fi
+    AC_MSG_RESULT([no])
+ fi

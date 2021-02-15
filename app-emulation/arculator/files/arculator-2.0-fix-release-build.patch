@@ -1,0 +1,11 @@
+--- arculator-v2.0/configure.ac.orig	2019-11-09 14:19:47.000000000 +0000
++++ arculator-v2.0/configure.ac	2021-02-14 16:47:46.939973962 +0000
+@@ -31,7 +31,7 @@
+           AC_HELP_STRING([--enable-release-build], [build for release]))
+ if test "$enable_release_build" = "yes"; then
+    AC_MSG_RESULT([yes])
+-   CFLAGS += " -DRELEASE_BUILD"
++   CFLAGS+=" -DRELEASE_BUILD"
+ else
+    AC_MSG_RESULT([no])
+ fi

@@ -1,0 +1,20 @@
+--- arculator-v2.0/src/cp15.h.orig	2019-11-09 14:19:47.000000000 +0000
++++ arculator-v2.0/src/cp15.h	2021-02-14 16:01:14.124313903 +0000
+@@ -1,6 +1,6 @@
+ extern int cp15_cacheon;
+ 
+-struct
++extern struct arm3cp_t
+ {
+         uint32_t ctrl;
+         uint32_t cache,update,disrupt;
+--- arculator-v2.0/src/cp15.c.orig	2019-11-09 14:19:47.000000000 +0000
++++ arculator-v2.0/src/cp15.c	2021-02-14 16:01:52.583267875 +0000
+@@ -7,6 +7,7 @@
+ #include "vidc.h"
+ 
+ int cp15_cacheon;
++struct arm3cp_t arm3cp;
+ 
+ void resetcp15()
+ {
