@@ -1,0 +1,15 @@
+--- arculator-v2.2/configure.ac.old	2023-06-24 16:51:11.000000000 +0100
++++ arculator-v2.2/configure.ac	2023-07-01 10:22:40.984965627 +0100
+@@ -22,7 +22,11 @@
+    CFLAGS_BUILD="-Wall -O0 -g -D_DEBUG -DDEBUG_LOG"
+    AC_MSG_RESULT([yes])
+ else
+-   CFLAGS_BUILD="-O3"
++   if test "${CFLAGS-set}" = "set"; then
++      CFLAGS_BUILD="-O3"
++   else
++      CFLAGS_BUILD="${CFLAGS}"
++   fi
+    AC_MSG_RESULT([no])
+ fi
+ 
