@@ -41,4 +41,5 @@ src_configure() {
 
 src_install() {
 	emake DESTDIR="${D}" install
+	find "${ED}" -type f -name '*.la' -delete || die
 }
