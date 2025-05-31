@@ -1,0 +1,350 @@
+diff '--color=auto' -ur arculator-v2.2.old/podules/aka31/src/aka31.h arculator-v2.2.new/podules/aka31/src/aka31.h
+--- arculator-v2.2.old/podules/aka31/src/aka31.h	2023-03-08 10:37:59.000000000 +0000
++++ arculator-v2.2.new/podules/aka31/src/aka31.h	2025-05-31 20:00:51.955180644 +0100
+@@ -12,9 +12,9 @@
+ void aka31_log(const char *format, ...);
+ void fatal(const char *format, ...);
+ 
+-void aka31_sbic_int();
+-void aka31_sbic_int_clear();
+-void aka31_tc_int();
++void aka31_sbic_int(podule_t *podule);
++void aka31_sbic_int_clear(podule_t *podule);
++void aka31_tc_int(podule_t *podule);
+ 
+ void aka31_write_ram(podule_t *podule, uint16_t addr, uint8_t val);
+ uint8_t aka31_read_ram(podule_t *podule, uint16_t addr);
+diff '--color=auto' -ur arculator-v2.2.old/podules/common/midi/midi_alsa.c arculator-v2.2.new/podules/common/midi/midi_alsa.c
+--- arculator-v2.2.old/podules/common/midi/midi_alsa.c	2023-06-24 16:49:34.000000000 +0100
++++ arculator-v2.2.new/podules/common/midi/midi_alsa.c	2025-05-31 19:57:41.712760967 +0100
+@@ -28,7 +28,7 @@
+ 
+ static int midi_id;
+ 
+-void midi_close();
++void midi_close(void *);
+ 
+ #define MAX_MIDI_DEVICES 50
+ static struct
+diff '--color=auto' -ur arculator-v2.2.old/podules/common/net/ne2000.h arculator-v2.2.new/podules/common/net/ne2000.h
+--- arculator-v2.2.old/podules/common/net/ne2000.h	2023-03-08 10:37:59.000000000 +0000
++++ arculator-v2.2.new/podules/common/net/ne2000.h	2025-05-27 20:16:16.168859142 +0100
+@@ -1,8 +1,8 @@
+-void *ne2000_init();
++void *ne2000_init(void (*set_irq)(void *p, int state), void *p, net_t *net);
+ void ne2000_close(void *p);
+ void ne2000_do_reset(void *p);
+ uint8_t ne2000_read(uint16_t address, void *p);
+ void ne2000_write(uint16_t address, uint8_t value, void *p);
+ uint16_t ne2000_dma_read_w(uint16_t offset, void *p);
+ void ne2000_dma_write_w(uint16_t offset, uint16_t value, void *p);
+-void ne2000_poll(void *p);
+\ No newline at end of file
++void ne2000_poll(void *p);
+diff '--color=auto' -ur arculator-v2.2.old/podules/common/net/net.h arculator-v2.2.new/podules/common/net/net.h
+--- arculator-v2.2.old/podules/common/net/net.h	2023-03-08 10:37:59.000000000 +0000
++++ arculator-v2.2.new/podules/common/net/net.h	2025-05-28 18:49:28.666757017 +0100
+@@ -11,9 +11,7 @@
+ 	void *p;
+ } packet_t;
+ 
+-struct net_t;
+-
+-typedef struct
++struct net_t
+ {
+ 	void (*close)(struct net_t *net);
+ 	int (*read)(struct net_t *net, packet_t *packet);
+@@ -21,11 +19,13 @@
+ 	void (*free)(struct net_t *net, packet_t *packet);
+ 
+ 	void *p;
+-} net_t;
++};
++
++typedef struct net_t net_t;
+ 
+ #define NETWORK_DEVICE_DEFAULT "slirp"
+ 
+ net_t *net_init(const char *network_device, uint8_t *mac_addr);
+ podule_config_selection_t *net_get_networks(void);
+ 
+-#endif /* _NET_H_ */
+\ No newline at end of file
++#endif /* _NET_H_ */
+diff '--color=auto' -ur arculator-v2.2.old/podules/common/net/slirp/ip.h arculator-v2.2.new/podules/common/net/slirp/ip.h
+--- arculator-v2.2.old/podules/common/net/slirp/ip.h	2023-03-29 17:12:57.000000000 +0100
++++ arculator-v2.2.new/podules/common/net/slirp/ip.h	2025-05-31 19:55:47.964439698 +0100
+@@ -202,7 +202,7 @@
+ struct mbuf_ptr {
+ 	union
+ 	{
+-		struct mbuf *mptr;
++		struct SLIRPmbuf *mptr;
+ 		uint64_t dummy;
+ 	} m;
+ };
+diff '--color=auto' -ur arculator-v2.2.old/podules/common/net/slirp/ip_input.c arculator-v2.2.new/podules/common/net/slirp/ip_input.c
+--- arculator-v2.2.old/podules/common/net/slirp/ip_input.c	2023-06-24 16:49:34.000000000 +0100
++++ arculator-v2.2.new/podules/common/net/slirp/ip_input.c	2025-05-31 19:47:40.047977997 +0100
+@@ -341,7 +341,7 @@
+ 
+ 	q = (struct ipasfrag *) q->ipf_next;
+ 	while (q != (struct ipasfrag*)&fp->frag_link) {
+-		struct mbuf *t = dtom(q);
++		struct SLIRPmbuf *t = dtom(q);
+ 		q = (struct ipasfrag *) q->ipf_next;
+ 		m_cat(m, t);
+ 	}
+diff '--color=auto' -ur arculator-v2.2.old/podules/common/net/slirp/misc.c arculator-v2.2.new/podules/common/net/slirp/misc.c
+--- arculator-v2.2.old/podules/common/net/slirp/misc.c	2023-06-24 16:49:34.000000000 +0100
++++ arculator-v2.2.new/podules/common/net/slirp/misc.c	2025-05-31 19:49:36.293196462 +0100
+@@ -92,8 +92,8 @@
+ 	struct hostent *he = NULL;
+ #define ANCIENT
+ 	#ifdef ANCIENT	
+-	if (gethostname(&buff,500) == 0)
+-            he = gethostbyname(&buff);
++	if (gethostname((char *)&buff,500) == 0)
++            he = gethostbyname((char *)&buff);
+         if (he)
+             our_addr = *(struct in_addr *)he->h_addr;
+         if (our_addr.s_addr == 0)
+diff '--color=auto' -ur arculator-v2.2.old/podules/lark/src/lark.h arculator-v2.2.new/podules/lark/src/lark.h
+--- arculator-v2.2.old/podules/lark/src/lark.h	2023-03-08 10:37:59.000000000 +0000
++++ arculator-v2.2.new/podules/lark/src/lark.h	2025-05-31 20:05:17.111210515 +0100
+@@ -26,6 +26,6 @@
+ 
+ void lark_sound_out_buffer(struct lark_t *lark, void *buffer, int samples);
+ 
+-int wss_irq();
++int wss_irq(ad1848_t *ad1848);
+ 
+ #endif /* _DLL_H_ */
+diff '--color=auto' -ur arculator-v2.2.old/podules/pccard/src/pcem/pit.h arculator-v2.2.new/podules/pccard/src/pcem/pit.h
+--- arculator-v2.2.old/podules/pccard/src/pcem/pit.h	2023-03-08 10:37:59.000000000 +0000
++++ arculator-v2.2.new/podules/pccard/src/pcem/pit.h	2025-05-31 20:07:42.134901227 +0100
+@@ -1,7 +1,7 @@
+ extern uint64_t PITCONST;
+ void pit_init();
+ void pit_ps2_init();
+-void pit_reset();
++void pit_reset(PIT *pit);
+ void pit_set_gate(PIT *pit, int channel, int gate);
+ void pit_set_using_timer(PIT *pit, int t, int using_timer);
+ void pit_set_out_func(PIT *pit, int t, void (*func)(int new_out, int old_out));
+diff '--color=auto' -ur arculator-v2.2.old/src/disc.h arculator-v2.2.new/src/disc.h
+--- arculator-v2.2.old/src/disc.h	2023-06-24 17:01:08.000000000 +0100
++++ arculator-v2.2.new/src/disc.h	2025-05-27 19:29:16.521460799 +0100
+@@ -40,7 +40,7 @@
+ void disc_close(int drive);
+ void disc_init();
+ void disc_reset();
+-void disc_poll();
++void disc_poll(void *p);
+ void disc_seek(int drive, int track);
+ void disc_readsector(int drive, int sector, int track, int side, int density);
+ void disc_writesector(int drive, int sector, int track, int side, int density);
+diff '--color=auto' -ur arculator-v2.2.old/src/hostfs.c arculator-v2.2.new/src/hostfs.c
+--- arculator-v2.2.old/src/hostfs.c	2023-06-24 16:49:34.000000000 +0100
++++ arculator-v2.2.new/src/hostfs.c	2025-05-27 19:30:19.716729132 +0100
+@@ -51,7 +51,7 @@
+ # define mkdir(name, mode) _mkdir(name)
+ #endif
+ 
+-typedef int bool;
++/* typedef int bool; */
+ 
+ #define true  ((bool) 1)
+ #define false ((bool) 0)
+diff '--color=auto' -ur arculator-v2.2.old/src/ide_a3in.c arculator-v2.2.new/src/ide_a3in.c
+--- arculator-v2.2.old/src/ide_a3in.c	2023-06-24 18:15:41.000000000 +0100
++++ arculator-v2.2.new/src/ide_a3in.c	2025-05-27 19:33:24.836633448 +0100
+@@ -34,8 +34,8 @@
+ 	ide_t ide;
+ } ide_a3in_ide_t;
+ 
+-static void ide_a3in_ide_irq_raise();
+-static void ide_a3in_ide_irq_clear();
++static void ide_a3in_ide_irq_raise(ide_t *ide);
++static void ide_a3in_ide_irq_clear(ide_t *ide);
+ 
+ static int ics_a3in_ide_init(struct podule_t *podule)
+ {
+diff '--color=auto' -ur arculator-v2.2.old/src/ide_idea.c arculator-v2.2.new/src/ide_idea.c
+--- arculator-v2.2.old/src/ide_idea.c	2023-06-24 18:15:41.000000000 +0100
++++ arculator-v2.2.new/src/ide_idea.c	2025-05-27 19:33:54.974063706 +0100
+@@ -32,8 +32,8 @@
+ 	ide_t ide;
+ } idea_ide_t;
+ 
+-static void idea_ide_irq_raise();
+-static void idea_ide_irq_clear();
++static void idea_ide_irq_raise(ide_t *ide);
++static void idea_ide_irq_clear(ide_t *ide);
+ 
+ static int idea_ide_init(struct podule_t *podule)
+ {
+diff '--color=auto' -ur arculator-v2.2.old/src/ide_riscdev.c arculator-v2.2.new/src/ide_riscdev.c
+--- arculator-v2.2.old/src/ide_riscdev.c	2023-06-24 18:15:41.000000000 +0100
++++ arculator-v2.2.new/src/ide_riscdev.c	2025-05-27 19:34:12.513052187 +0100
+@@ -29,8 +29,8 @@
+ 	ide_t ide;
+ } riscdev_ide_t;
+ 
+-static void riscdev_ide_irq_raise();
+-static void riscdev_ide_irq_clear();
++static void riscdev_ide_irq_raise(ide_t *ide);
++static void riscdev_ide_irq_clear(ide_t *ide);
+ 
+ static int riscdev_ide_init(struct podule_t *podule)
+ {
+diff '--color=auto' -ur arculator-v2.2.old/src/ide_zidefs_a3k.c arculator-v2.2.new/src/ide_zidefs_a3k.c
+--- arculator-v2.2.old/src/ide_zidefs_a3k.c	2023-06-24 18:15:41.000000000 +0100
++++ arculator-v2.2.new/src/ide_zidefs_a3k.c	2025-05-27 19:34:41.129686118 +0100
+@@ -31,8 +31,8 @@
+ 	ide_t ide;
+ } zidefs_a3k_ide_t;
+ 
+-static void zidefs_a3k_ide_irq_raise();
+-static void zidefs_a3k_ide_irq_clear();
++static void zidefs_a3k_ide_irq_raise(ide_t *ide);
++static void zidefs_a3k_ide_irq_clear(ide_t *ide);
+ 
+ static int zidefs_a3k_ide_init(struct podule_t *podule)
+ {
+diff '--color=auto' -ur arculator-v2.2.old/src/ide_zidefs.c arculator-v2.2.new/src/ide_zidefs.c
+--- arculator-v2.2.old/src/ide_zidefs.c	2023-06-24 18:15:41.000000000 +0100
++++ arculator-v2.2.new/src/ide_zidefs.c	2025-05-27 19:34:26.270852476 +0100
+@@ -31,8 +31,8 @@
+ 	ide_t ide;
+ } zidefs_ide_t;
+ 
+-static void zidefs_ide_irq_raise();
+-static void zidefs_ide_irq_clear();
++static void zidefs_ide_irq_raise(ide_t *ide);
++static void zidefs_ide_irq_clear(ide_t *ide);
+ 
+ static int zidefs_ide_init(struct podule_t *podule)
+ {
+diff '--color=auto' -ur arculator-v2.2.old/src/keyboard.c arculator-v2.2.new/src/keyboard.c
+--- arculator-v2.2.old/src/keyboard.c	2023-06-24 18:15:41.000000000 +0100
++++ arculator-v2.2.new/src/keyboard.c	2025-05-27 19:57:20.607332611 +0100
+@@ -77,14 +77,16 @@
+ 	timer_set_delay_u64(&keyboard_rx_timer, 1000 * TIMER_USEC);
+ }
+ 
+-void key_do_rx_callback()
++void key_do_rx_callback(void *p)
+ {
++	(void)p;
+ 	LOG_KB_MOUSE("RX interrupt\n");
+ 	ioc_irqb(IOC_IRQB_KEYBOARD_RX);
+ }
+ 
+-void key_do_tx_callback()
++void key_do_tx_callback(void *p)
+ {
++	(void)p;
+ 	LOG_KB_MOUSE("TX interrupt\n");
+ 	ioc_irqb(IOC_IRQB_KEYBOARD_TX);
+ }
+diff '--color=auto' -ur arculator-v2.2.old/src/keyboard.h arculator-v2.2.new/src/keyboard.h
+--- arculator-v2.2.old/src/keyboard.h	2023-06-24 17:01:08.000000000 +0100
++++ arculator-v2.2.new/src/keyboard.h	2025-05-27 19:56:53.882446121 +0100
+@@ -1,10 +1,10 @@
+ void keyboard_init();
+-void keyboard_poll();
++void keyboard_poll(void *p);
+ uint8_t keyboard_read();
+ void keyboard_write(uint8_t val);
+ 
+-void key_do_rx_callback();
+-void key_do_tx_callback();
++void key_do_rx_callback(void *p);
++void key_do_tx_callback(void *p);
+ 
+ void resetmouse();
+ void doosmouse();
+diff '--color=auto' -ur arculator-v2.2.old/src/sound_sdl2.c arculator-v2.2.new/src/sound_sdl2.c
+--- arculator-v2.2.old/src/sound_sdl2.c	2023-06-24 16:49:34.000000000 +0100
++++ arculator-v2.2.new/src/sound_sdl2.c	2025-05-27 20:06:19.878978475 +0100
+@@ -1,4 +1,5 @@
+ #include <SDL2/SDL.h>
++#include "arc.h"
+ #include "plat_sound.h"
+ #include "disc.h"
+ #include "sound.h"
+diff '--color=auto' -ur arculator-v2.2.old/src/st506_akd52.c arculator-v2.2.new/src/st506_akd52.c
+--- arculator-v2.2.old/src/st506_akd52.c	2023-06-24 18:15:42.000000000 +0100
++++ arculator-v2.2.new/src/st506_akd52.c	2025-05-27 20:04:52.618544727 +0100
+@@ -34,8 +34,8 @@
+ 	st506_t st506;
+ } akd52_t;
+ 
+-static void akd52_irq_raise();
+-static void akd52_irq_clear();
++static void akd52_irq_raise(st506_t *st506);
++static void akd52_irq_clear(st506_t *st506);
+ 
+ static int akd52_init(struct podule_t *podule)
+ {
+diff '--color=auto' -ur arculator-v2.2.old/src/wd1770.c arculator-v2.2.new/src/wd1770.c
+--- arculator-v2.2.old/src/wd1770.c	2023-06-24 18:15:42.000000000 +0100
++++ arculator-v2.2.new/src/wd1770.c	2025-05-27 20:13:23.990525470 +0100
+@@ -57,8 +57,9 @@
+ //        rpclog("fdc_ready %i on drive %i (%i)\n", fdc_ready, curdrive, disc_empty(curdrive));
+ }
+ 
+-static void wd1770_spindown()
++static void wd1770_spindown(void *p)
+ {
++	(void)p;
+ 	rpclog("WD1770_spindown\n");
+ 	wd1770.status &= ~0x80;
+ /*        motoron = 0;
+@@ -175,7 +176,7 @@
+ 			timer_disable(&wd1770.timer);
+ 			ioc_fiq(IOC_FIQ_DISC_IRQ);
+ 			wd1770.status = 0x90;
+-			wd1770_spindown();
++			wd1770_spindown(NULL);
+ 			break;
+ /*                        rpclog("Bad 1770 command %02X\n", val);
+ 			dumpregs();
+@@ -341,7 +342,7 @@
+ 	timer_disable(&wd1770.timer);
+ 	ioc_fiq(IOC_FIQ_DISC_IRQ);
+ 	wd1770.status = 0x90;
+-	wd1770_spindown();
++	wd1770_spindown(NULL);
+ }
+ 
+ static void wd1770_datacrcerror(void *p)
+@@ -350,7 +351,7 @@
+ 	timer_disable(&wd1770.timer);
+ 	ioc_fiq(IOC_FIQ_DISC_IRQ);
+ 	wd1770.status = 0x88;
+-	wd1770_spindown();
++	wd1770_spindown(NULL);
+ }
+ 
+ static void wd1770_headercrcerror(void *p)
+@@ -359,7 +360,7 @@
+ 	timer_disable(&wd1770.timer);
+ 	ioc_fiq(IOC_FIQ_DISC_IRQ);
+ 	wd1770.status = 0x98;
+-	wd1770_spindown();
++	wd1770_spindown(NULL);
+ }
+ 
+ static int wd1770_getdata(int last, void *p)
+@@ -380,7 +381,7 @@
+ 	timer_disable(&wd1770.timer);
+ 	ioc_fiq(IOC_FIQ_DISC_IRQ);
+ 	wd1770.status = 0xC0;
+-	wd1770_spindown();
++	wd1770_spindown(NULL);
+ }
+ 
+ static void wd1770_fdc_indexpulse(void *p)
