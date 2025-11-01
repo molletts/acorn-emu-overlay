@@ -1,0 +1,10 @@
+--- work/src/hostfs.c.orig	2025-11-01 11:34:36.353541821 +0000
++++ work/src/hostfs.c	2025-11-01 11:34:49.936964468 +0000
+@@ -24,6 +24,7 @@
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <string.h>
++#include <stdbool.h>
+ 
+ #include <dirent.h>
+ #ifdef _MSC_VER
