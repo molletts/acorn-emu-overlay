@@ -24,8 +24,7 @@ DEPEND="${RDEPEND}"
 
 PATCHES=(
     "${FILESDIR}"/${PN}-2.2-honour-CFLAGS.patch
-    "${FILESDIR}"/${PN}-2.2-build-fixes.patch
-    "${FILESDIR}"/${PN}-2.2-include-stdbool-h.patch
+    "${FILESDIR}"/${PN}-2.2-build-fixes-v2.patch
 )
 
 src_prepare() {
